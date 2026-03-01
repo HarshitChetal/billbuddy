@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#2D2D2D" />
+    <meta
+      name="description"
+      content="BillBuddy - The Future of Billing, Refined."
+    />
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <title>BillBuddy | Refined Billing Ecosystem</title>
+
+    <style>
+      /* Base Reset */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent; /* Mobile optimization */
+      }
+
+      html, body {
+        height: 100%;
+        width: 100%;
+        overflow-x: hidden;
+      }
+
+      body {
+        /* Outfit is our primary brand font */
+        font-family: 'Outfit', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        background-color: #FFFFFF;
+        color: #1A1A1A;
+        line-height: 1.5;
+      }
+
+      /* Global Smooth Interactions */
+      button, a, input, div {
+        transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+      }
+
+      /* Focus states for accessibility */
+      input:focus {
+        border-color: #2D2D2D !important;
+      }
+
+      /* Scrollbar Styling for that Premium Look */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #F9F9F9;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #EAEAEA;
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #2D2D2D;
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+  </body>
+</html>
