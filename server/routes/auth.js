@@ -1,45 +1,60 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
-const Whitelist = require('../models/Whitelist'); 
+const jwt = require('jsonwebtoken');
 
-// --- SIGNUP ROUTE ---
-router.post('/signup', async (req, res) => {
-  console.log("Signup Request Aayi:", req.body);
+// --- LOGIN ROUTE (Missing tha, ab add kar diya) ---
+router.post('/login', async (req, res) => {
   try {
-    const { email, password, subRole } = req.body;
+    const { email, password } = req.body;
+    
+    // 1. User dhundo
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ message: "Bhai, ye email registered nahi hai!" });
 
-    // 1. Existing User Check
-    const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).json({ message: "Bhai, account pehle se bana hai!" });
-
-    // 2. Role Check (Case-Insensitive fix)
-    // Hum trim() aur toLowerCase() use karenge taaki spelling ki galti na ho
-    const normalizedRole = subRole ? subRole.trim() : "";
-
-    if (normalizedRole !== 'Owner') {
-      console.log("Checking Whitelist for non-owner:", email);
-      const isWhitelisted = await Whitelist.findOne({ email, role: normalizedRole });
-      
-      if (!isWhitelisted) {
-        console.log("Whitelist entry NOT found in DB!");
-        return res.status(403).json({ message: "Bhai, Owner ne whitelist nahi kiya!" });
-      }
-      console.log("Whitelist verified!");
-    } else {
-      console.log("Owner bypass: Whitelist check skipped.");
+    // 2. Password check (Abhi plain text, baad mein bcrypt lagaenge)
+    if (user.password !== password) {
+      return res.status(400).json({ message: "Galat password!" });
     }
 
-    // 3. Save User
-    const newUser = new User({ email, password, subRole: normalizedRole });
-    await newUser.save();
-    console.log("✅ User Save Ho Gaya in Atlas!");
-    
-    res.status(201).json({ message: "Mubarak ho! Signup success." });
+    // 3. Token generate karo
+    const token = jwt.sign(
+      { userId: user._id, subRole: user.subRole },
+      process.env.JWT_SECRET || 'bhai_secret',
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      token,
+      user: { id: user._id, email: user.email, subRole: user.subRole }
+    });
+
   } catch (err) {
-    console.error("❌ CRASH ERROR:", err.message);
     res.status(500).json({ message: "Server Error: " + err.message });
   }
 });
 
-// ... baaki login route same rahega
+// --- SIGNUP ROUTE (Pura logic) ---
+router.post('/signup', async (req, res) => {
+  try {
+    const { email, password, subRole, mobileNumber } = req.body;
+    
+    const existingUser = await User.findOne({ email });
+    if (existingUser) return res.status(400).json({ message: "Bhai, account pehle se hai!" });
+
+    const newUser = new User({ 
+      email, 
+      password, 
+      subRole: subRole || 'Owner', 
+      role: 'business', // Model ki requirement satisfy karne ke liye
+      mobileNumber: mobileNumber || "0000000000" 
+    });
+
+    await newUser.save();
+    res.status(201).json({ message: "Signup Success! Ab Login karo." });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+module.exports = router;
