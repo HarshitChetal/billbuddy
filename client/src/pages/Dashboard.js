@@ -1,95 +1,106 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 function Dashboard() {
-  const user = JSON.parse(localStorage.getItem('user_data'));
-  const [staff, setStaff] = useState({ email: '', mobile: '', role: 'Manager' });
-  const [loading, setLoading] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  
+  // State for Staff Access Form
+  const [staffData, setStaffData] = useState({ email: '', mobile: '', role: 'Manager' });
 
-  const handleWhitelist = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post('http://localhost:5000/api/whitelist/add', {
-        email: staff.email,
-        mobileNumber: staff.mobile,
-        role: staff.role,
-        ownerId: user?.id 
-      }, {
-        headers: { Authorization: `Bearer ${token}` } // Security ke liye
-      });
-
-      alert("✅ Staff Authorized: Ab wo is email se signup kar sakte hain.");
-      setStaff({ email: '', mobile: '', role: 'Manager' }); // Form clear
-    } catch (err) {
-      alert("❌ Error: " + (err.response?.data?.message || "Server connection failed"));
-    }
-    setLoading(false);
-  };
+  const userData = JSON.parse(localStorage.getItem('user_data')) || {};
+  const userName = userData.username || userData.email?.split('@')[0] || "Owner";
+  const displayPic = userData.profilePic;
 
   return (
-    <div style={containerStyle}>
-      <header style={headerStyle}>
-        <h2 style={{ fontWeight: '900', letterSpacing: '-1.5px', margin: 0 }}>BillBuddy</h2>
-        <button onClick={() => { localStorage.clear(); window.location.href='/'; }} style={logoutBtn}>Logout</button>
-      </header>
+    <div style={dashboardContainer}>
+      {/* --- PREMIMUM NAV WITH DROPDOWN --- */}
+      <nav style={navStyle}>
+        <h1 style={logoStyle}>BillBuddy</h1>
+        <div style={menuWrapper}>
+          <div onClick={() => setIsMenuOpen(!isMenuOpen)} style={profileTrigger}>
+            <div style={avatarStyle}>
+              {displayPic ? <img src={displayPic} style={imgStyle} alt="profile" /> : userName[0].toUpperCase()}
+            </div>
+            <span style={userNameStyle}>Hello, {userName} 👋</span>
+          </div>
 
-      <main style={mainStyle}>
-        <section style={{ marginBottom: '40px' }}>
-          <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '5px' }}>Welcome, {user?.subRole}</h1>
-          <p style={{ color: '#888' }}>{user?.email}</p>
-        </section>
+          {/* 💥 SEXY DROPDOWN MENU */}
+          <div style={{
+            ...dropdownStyle,
+            opacity: isMenuOpen ? 1 : 0,
+            transform: isMenuOpen ? 'translateY(0)' : 'translateY(-20px)',
+            pointerEvents: isMenuOpen ? 'all' : 'none',
+            transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' 
+          }}>
+            <div style={dropdownItem} onClick={() => navigate('/inventory')}>📦 Inventory</div>
+            <div style={dropdownItem} onClick={() => navigate('/settings')}>⚙️ Settings</div>
+            <div style={divider} />
+            <div style={{ ...dropdownItem, color: '#ff4444' }} onClick={() => { localStorage.clear(); navigate('/'); }}>🚪 Logout</div>
+          </div>
+        </div>
+      </nav>
 
-        {user?.subRole === 'Owner' && (
-          <section style={whiteCard}>
-            <h3 style={cardTitle}>Authorize Staff Access</h3>
-            <p style={cardSub}>Staff can only signup after you whitelist them here.</p>
-            
-            <form onSubmit={handleWhitelist} style={formStyle}>
-              <input 
-                placeholder="Staff Email" 
-                style={inputStyle} 
-                value={staff.email}
-                onChange={(e) => setStaff({...staff, email: e.target.value})}
-                required
-              />
-              <input 
-                placeholder="Mobile Number" 
-                style={inputStyle} 
-                value={staff.mobile}
-                onChange={(e) => setStaff({...staff, mobile: e.target.value})}
-                required
-              />
-              <select 
-                style={inputStyle} 
-                value={staff.role}
-                onChange={(e) => setStaff({...staff, role: e.target.value})}
-              >
-                <option value="Manager">Manager</option>
-                <option value="Employee">Employee</option>
-              </select>
-              <button type="submit" disabled={loading} style={actionBtn}>
-                {loading ? "Authorizing..." : "Grant Access"}
-              </button>
-            </form>
-          </section>
-        )}
-      </main>
+      {/* --- MAIN CONTENT --- */}
+      <div style={contentStyle}>
+        <div style={welcomeHero}>
+          <h2 style={heroTitle}>Welcome, {userData.subRole || 'Owner'}</h2>
+          <p style={{ color: '#888' }}>{userData.email}</p>
+        </div>
+
+        {/* --- REAL STAFF ACCESS SECTION (Wahi Purana Wala) --- */}
+        <div style={whiteCard}>
+          <h3 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '10px' }}>Authorize Staff Access</h3>
+          <p style={{ color: '#888', marginBottom: '30px' }}>Staff can only signup after you whitelist them here.</p>
+
+          <div style={formRow}>
+            <input 
+              style={inputField} 
+              placeholder="Staff Email" 
+              value={staffData.email}
+              onChange={(e) => setStaffData({...staffData, email: e.target.value})}
+            />
+            <input 
+              style={inputField} 
+              placeholder="Mobile Number" 
+              value={staffData.mobile}
+              onChange={(e) => setStaffData({...staffData, mobile: e.target.value})}
+            />
+            <select 
+              style={selectField}
+              value={staffData.role}
+              onChange={(e) => setStaffData({...staffData, role: e.target.value})}
+            >
+              <option>Manager</option>
+              <option>Employee</option>
+            </select>
+            <button style={grantBtn}>Grant Access</button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
-// PREMIUM STYLES
-const containerStyle = { backgroundColor: '#F9F7F2', minHeight: '100vh', fontFamily: 'Inter, sans-serif' };
-const headerStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 60px', backgroundColor: '#FFF', borderBottom: '1px solid #EEE' };
-const mainStyle = { padding: '40px 60px', maxWidth: '1200px', margin: '0 auto' };
-const whiteCard = { backgroundColor: '#FFF', padding: '40px', borderRadius: '30px', boxShadow: '0 20px 60px rgba(0,0,0,0.03)' };
-const cardTitle = { fontSize: '22px', fontWeight: '800', marginBottom: '5px' };
-const cardSub = { color: '#AAA', fontSize: '14px', marginBottom: '30px' };
-const formStyle = { display: 'flex', gap: '15px', flexWrap: 'wrap' };
-const inputStyle = { padding: '15px', borderRadius: '12px', border: '1px solid #EEE', flex: 1, minWidth: '200px' };
-const actionBtn = { padding: '15px 30px', backgroundColor: '#121212', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: '700', cursor: 'pointer' };
-const logoutBtn = { padding: '10px 20px', borderRadius: '10px', border: '1px solid #EEE', backgroundColor: 'transparent', cursor: 'pointer', fontWeight: '600' };
+// --- PREMIUM UI STYLES (Matches image_e7787b.png exactly) ---
+const dashboardContainer = { minHeight: '100vh', backgroundColor: '#F9F7F2', fontFamily: "'Outfit', sans-serif" };
+const navStyle = { display: 'flex', justifyContent: 'space-between', padding: '20px 60px', backgroundColor: '#fff', borderBottom: '1px solid #f0f0f0' };
+const logoStyle = { fontSize: '24px', fontWeight: '900' };
+const menuWrapper = { position: 'relative' };
+const profileTrigger = { display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 18px', borderRadius: '50px', backgroundColor: '#f8f8f8', cursor: 'pointer' };
+const avatarStyle = { width: '32px', height: '32px', backgroundColor: '#121212', color: '#fff', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: '800', overflow: 'hidden' };
+const imgStyle = { width: '100%', height: '100%', objectFit: 'cover' };
+const userNameStyle = { fontWeight: '700', fontSize: '14px' };
+const dropdownStyle = { position: 'absolute', top: '60px', right: 0, width: '220px', backgroundColor: '#fff', borderRadius: '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', padding: '12px', zIndex: 200 };
+const dropdownItem = { padding: '12px 16px', borderRadius: '12px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' };
+const divider = { height: '1px', backgroundColor: '#eee', margin: '8px 0' };
+const contentStyle = { padding: '60px' };
+const welcomeHero = { marginBottom: '40px' };
+const heroTitle = { fontSize: '48px', fontWeight: '800' };
+const whiteCard = { backgroundColor: '#fff', padding: '50px', borderRadius: '40px', boxShadow: '0 4px 30px rgba(0,0,0,0.02)' };
+const formRow = { display: 'flex', gap: '15px', alignItems: 'center' };
+const inputField = { flex: 2, padding: '18px', borderRadius: '15px', border: '1px solid #F0F0F0', backgroundColor: '#FBFBFB', outline: 'none' };
+const selectField = { flex: 1, padding: '18px', borderRadius: '15px', border: '1px solid #F0F0F0', backgroundColor: '#FBFBFB', outline: 'none' };
+const grantBtn = { flex: 1, padding: '18px', borderRadius: '15px', border: 'none', backgroundColor: '#121212', color: '#fff', fontWeight: '700', cursor: 'pointer' };
 
 export default Dashboard;
