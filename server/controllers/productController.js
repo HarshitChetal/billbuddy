@@ -1,34 +1,33 @@
-const { Product } = require('../models/schemas');
-
+const Product = require('../models/Product');
 
 exports.addProduct = async (req, res) => {
   try {
-    const { name, category, attributes, price, quantityInStock, unitType } = req.body;
+    const { name, categoryId, price, barcode, trackInventory, quantity } = req.body;
+    const ownerId = req.user.userId || req.user.id;
 
     const newProduct = new Product({
-      companyId: req.user.companyId,
+      owner: ownerId,
+      categoryId,
       name,
-      category,
-      attributes,
       price,
-      quantityInStock,
-      unitType
+      barcode: barcode || null,
+      trackInventory: trackInventory || false,
+      quantity: trackInventory ? quantity : 0
     });
 
     await newProduct.save();
-    res.status(201).json({ msg: "Product added successfully!", product: newProduct });
+    res.status(201).json({ success: true, data: newProduct });
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Error adding dynamic product");
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
-
-exports.getInventory = async (req, res) => {
+exports.getProducts = async (req, res) => {
   try {
-    const inventory = await Product.find({ companyId: req.user.companyId });
-    res.json(inventory);
+    const ownerId = req.user.userId || req.user.id;
+    const products = await Product.find({ owner: ownerId }).populate('categoryId');
+    res.json(products);
   } catch (err) {
-    res.status(500).send("Error fetching inventory");
+    res.status(500).json({ message: err.message });
   }
 };

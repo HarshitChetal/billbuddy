@@ -5,9 +5,9 @@ const cors = require('cors');
 
 const app = express();
 app.use(express.json());
-app.use(cors()); 
+app.use(cors());
 
-// Database Connection
+// Database Connection [cite: 236]
 mongoose.connect(process.env.MONGO_URI, {
   family: 4, 
   serverSelectionTimeoutMS: 20000, 
@@ -19,11 +19,14 @@ mongoose.connect(process.env.MONGO_URI, {
   console.error("❌ DB Connection Error: ", err.message);
 });
 
-// Routes
+// --- EXISTING ROUTES (PRESERVED) [cite: 237] ---
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/whitelist', require('./routes/whitelistRoutes'));
-// 🆕 Business Profile Route Yahan Add Kar Diya Hai
-app.use('/api/business', require('./routes/businessRoutes')); 
+app.use('/api/business', require('./routes/businessRoutes'));
+
+// --- 🆕 NEW INVENTORY ROUTES (ACTIVE NOW) ---
+app.use('/api/inventory/categories', require('./routes/categoryRoutes'));
+app.use('/api/inventory/products', require('./routes/productRoutes'));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
