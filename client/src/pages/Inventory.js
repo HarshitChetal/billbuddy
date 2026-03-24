@@ -2,16 +2,16 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// 🌳 Recursive Blueprint Node
 const CategoryNode = ({ category, allCategories, onAddSub, onDelete, onSelect, activeId, onUpdateImage }) => {
   const [isOpen, setIsOpen] = useState(false);
   const children = allCategories.filter(cat => cat.parent === category._id);
-
   return (
     <div style={{ marginLeft: '25px', marginBottom: '10px' }}>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{...categoryItemStyle, border: activeId === category._id ? '2px solid #121212' : '1px solid #EEE'}}>
         <div onClick={() => { setIsOpen(!isOpen); onSelect(category); }} style={nodeTrigger}>
           <motion.span animate={{ rotate: isOpen ? 90 : 0 }}>▶</motion.span>
-          {category.image ? <img src={category.image} style={thumbnailStyle} alt="cat" /> : <span>📁</span>}
+          {category.image ? <img src={category.image} style={thumbnailStyle} alt="cat" /> : <span>{children.length > 0 ? '📁' : '📄'}</span>}
           <span style={{ fontWeight: '700' }}>{category.name}</span>
         </div>
         <div style={catActions}>
@@ -35,15 +35,20 @@ function Inventory() {
   const [activeTab, setActiveTab] = useState('stock'); 
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
-  const [selectedCat, setSelectedCat] = useState(null); // 🆕 Now used in filter
-  const [isCatModalOpen, setIsCatModalOpen] = useState(false); // 🆕 Now used in modal
+  const [searchTerm, setSearchTerm] = useState(''); 
+  const [selectedCat, setSelectedCat] = useState(null);
+  
+  // All States
+  const [isCatModalOpen, setIsCatModalOpen] = useState(false);
   const [isProdModalOpen, setIsProdModalOpen] = useState(false);
-  const [isImageUpdateModalOpen, setIsImageUpdateModalOpen] = useState(false); // 🆕 Now used in modal
+  const [isImageUpdateModalOpen, setIsImageUpdateModalOpen] = useState(false);
   const [categoryToUpdate, setCategoryToUpdate] = useState(null);
-  const [imagePreview, setImagePreview] = useState(""); // 🆕 Now used in image logic
   const [newCatName, setNewCatName] = useState('');
+  const [imagePreview, setImagePreview] = useState("");
   const [parentForNewSub, setParentForNewSub] = useState(null);
-  const [newProduct, setNewProduct] = useState({ name: '', price: '', categoryId: '', trackInventory: false, quantity: 0, image: '' });
+  const [newProduct, setNewProduct] = useState({ 
+    name: '', price: '', categoryId: '', trackInventory: false, quantity: 0, image: '', cgstRate: 0, sgstRate: 0 
+  });
 
   useEffect(() => { fetchData(); }, [activeTab]);
 
@@ -69,30 +74,20 @@ function Inventory() {
     if (file) reader.readAsDataURL(file);
   };
 
-  const handleSaveCategory = async () => {
-    const token = localStorage.getItem('token');
-    await axios.post('http://localhost:5000/api/inventory/categories/add', 
-      { name: newCatName, parent: parentForNewSub?._id || null, image: imagePreview }, 
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    setIsCatModalOpen(false); setNewCatName(''); setImagePreview(''); fetchData();
-  };
-
   const handleSaveProduct = async () => {
+    if (!newProduct.categoryId) return alert("Category select karo!");
     const token = localStorage.getItem('token');
     await axios.post('http://localhost:5000/api/inventory/products/add', newProduct, { headers: { Authorization: `Bearer ${token}` } });
-    setIsProdModalOpen(false); setNewProduct({ name: '', price: '', categoryId: '', trackInventory: false, quantity: 0, image: '' }); fetchData();
+    setIsProdModalOpen(false); 
+    setNewProduct({ name: '', price: '', categoryId: '', trackInventory: false, quantity: 0, image: '', cgstRate: 0, sgstRate: 0 }); 
+    fetchData();
   };
 
   const handleUpdateCategoryImage = async () => {
-    if (!imagePreview) return alert("Please select an image first.");
+    if (!imagePreview) return alert("Select image first.");
     const token = localStorage.getItem('token');
-    try {
-      await axios.patch(`http://localhost:5000/api/inventory/categories/${categoryToUpdate._id}/image`, 
-        { image: imagePreview }, { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setIsImageUpdateModalOpen(false); setImagePreview(''); fetchData();
-    } catch (err) { alert("Failed to update visual."); }
+    await axios.patch(`http://localhost:5000/api/inventory/categories/${categoryToUpdate._id}/image`, { image: imagePreview }, { headers: { Authorization: `Bearer ${token}` } });
+    setIsImageUpdateModalOpen(false); setImagePreview(''); fetchData();
   };
 
   const getSubIds = (id) => {
@@ -101,7 +96,11 @@ function Inventory() {
     return ids;
   };
 
-  const filteredItems = selectedCat ? products.filter(p => getSubIds(selectedCat._id).includes(p.categoryId?._id)) : products;
+  const filteredItems = products.filter(p => {
+    const matchesCategory = selectedCat ? getSubIds(selectedCat._id).includes(p.categoryId?._id) : true;
+    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   return (
     <div style={inventoryContainer}>
@@ -117,20 +116,25 @@ function Inventory() {
         <div style={whiteCard}>
           <div style={actionRow}>
             <h3>{selectedCat ? `Layer: ${selectedCat.name}` : 'Asset Overview'}</h3>
-            <div style={{display:'flex', gap:'10px'}}>
-              {selectedCat && <button style={cancelBtn} onClick={() => setSelectedCat(null)}>Clear Filter</button>}
-              <button style={primaryBtn} onClick={() => setIsProdModalOpen(true)}>+ New Asset</button>
+            <div style={{display:'flex', gap:'15px'}}>
+               <div style={searchContainer}><input style={searchInputStyle} placeholder="Search identity..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div>
+               <button style={primaryBtn} onClick={() => setIsProdModalOpen(true)}>+ New Asset</button>
             </div>
           </div>
           <table style={tableStyle}>
-            <thead><tr style={tableHeader}><th>Image</th><th>Identity</th><th>Price</th><th>Stock</th></tr></thead>
+            <thead><tr style={tableHeader}><th>Visual</th><th>Identity & Tax</th><th>Price</th><th>Stock</th></tr></thead>
             <tbody>
               {filteredItems.map(p => (
                 <tr key={p._id} style={tableRow}>
-                  <td>{p.image ? <img src={p.image} style={thumbnailStyle} alt="p" /> : '---'}</td>
-                  <td style={{ fontWeight: '700' }}>{p.name}</td>
+                  <td>{p.image ? <img src={p.image} style={thumbnailStyle} alt="p" /> : <div style={noImgBox}>No Img</div>}</td>
+                  <td>
+                    <div style={{ fontWeight: '700' }}>{p.name}</div>
+                    <div style={{ fontSize: '11px', color: '#888' }}>GST: {Number(p.cgstRate || 0) + Number(p.sgstRate || 0)}% (C:{p.cgstRate}% S:{p.sgstRate}%)</div>
+                  </td>
                   <td>₹{p.price}</td>
-                  <td>{p.trackInventory ? p.quantity : 'Service'}</td>
+                  <td style={{ color: p.trackInventory ? (p.quantity > 5 ? '#2ECC71' : '#E74C3C') : '#95A5A6', fontWeight: '800' }}>
+                    {p.trackInventory ? `${p.quantity} Units` : 'Service Mode'}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -143,70 +147,93 @@ function Inventory() {
           <div style={actionRow}><h3>Inventory Blueprint</h3><button style={primaryBtn} onClick={() => { setParentForNewSub(null); setIsCatModalOpen(true); }}>+ Root Variable</button></div>
           {categories.filter(c => !c.parent).map(root => (
             <CategoryNode 
-              key={root._id} category={root} allCategories={categories} 
-              onAddSub={(cat) => { setParentForNewSub(cat); setIsCatModalOpen(true); }} 
-              onDelete={(id) => { if(window.confirm("Are you sure?")) axios.delete(`http://localhost:5000/api/inventory/categories/${id}`, {headers: {Authorization: `Bearer ${localStorage.getItem('token')}`}}).then(fetchData) }} 
-              onSelect={setSelectedCat} activeId={selectedCat?._id} 
-              onUpdateImage={(cat) => { setCategoryToUpdate(cat); setIsImageUpdateModalOpen(true); }} 
+                key={root._id} category={root} allCategories={categories} 
+                onAddSub={(cat) => { setParentForNewSub(cat); setIsCatModalOpen(true); }} 
+                onDelete={(id) => { if(window.confirm("Delete Category & Linked Products?")) axios.delete(`http://localhost:5000/api/inventory/categories/${id}`, {headers: {Authorization: `Bearer ${localStorage.getItem('token')}`}}).then(fetchData) }} 
+                onSelect={setSelectedCat} activeId={selectedCat?._id}
+                onUpdateImage={(cat) => { setCategoryToUpdate(cat); setIsImageUpdateModalOpen(true); }} 
             />
           ))}
         </div>
       )}
 
       <AnimatePresence>
-        {/* 🆕 Warnings Fixed: Image Update Modal used here */}
-        {isImageUpdateModalOpen && (
-          <div style={modalOverlay}>
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} style={modalContent}>
-              <h3>Update Visual: {categoryToUpdate?.name}</h3>
-              <input type="file" accept="image/*" onChange={(e) => handleImage(e)} style={{marginBottom: '10px'}} />
-              {imagePreview && <img src={imagePreview} style={{width: '100%', borderRadius: '15px', maxHeight: '150px', objectFit: 'cover'}} alt="prev" />}
-              <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}><button style={primaryBtn} onClick={handleUpdateCategoryImage}>Confirm Update</button><button style={cancelBtn} onClick={() => { setIsImageUpdateModalOpen(false); setImagePreview(''); }}>Discard</button></div>
-            </motion.div>
-          </div>
-        )}
-
-        {/* 🆕 Warnings Fixed: Category Modal used here */}
-        {isCatModalOpen && (
-          <div style={modalOverlay}>
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} style={modalContent}>
-              <h3>{parentForNewSub ? `Adding to ${parentForNewSub.name}` : 'New Root Variable'}</h3>
-              <input style={inputStyle} value={newCatName} onChange={(e) => setNewCatName(e.target.value)} placeholder="Name..." />
-              <input type="file" accept="image/*" onChange={(e) => handleImage(e)} style={{marginBottom: '10px'}} />
-              {imagePreview && <img src={imagePreview} style={{width: '60px', borderRadius: '10px'}} alt="prev" />}
-              <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}><button style={primaryBtn} onClick={handleSaveCategory}>Confirm</button><button style={cancelBtn} onClick={() => setIsCatModalOpen(false)}>Discard</button></div>
-            </motion.div>
-          </div>
-        )}
-
+        {/* New Asset Modal */}
         {isProdModalOpen && (
-          <div style={modalOverlay}>
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} style={modalContent}>
-              <h3>Register New Asset</h3>
-              <select style={inputStyle} onChange={(e) => setNewProduct({...newProduct, categoryId: e.target.value})}>
-                <option value="">Select Category</option>
+          <div style={modalOverlay}><motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} style={modalContent}>
+              <h3>New Asset Registration</h3>
+              <label style={labelStyle}>Blueprint Layer</label>
+              <select style={inputStyle} value={newProduct.categoryId} onChange={(e) => setNewProduct({...newProduct, categoryId: e.target.value})}>
+                <option value="">Choose a Category...</option>
                 {categories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
               </select>
-              <input style={inputStyle} placeholder="Name" onChange={(e) => setNewProduct({...newProduct, name: e.target.value})} />
-              <input style={inputStyle} placeholder="Price" type="number" onChange={(e) => setNewProduct({...newProduct, price: e.target.value})} />
+              <input style={inputStyle} value={newProduct.name} placeholder="Asset Name" onChange={(e) => setNewProduct({...newProduct, name: e.target.value})} />
+              <input style={inputStyle} value={newProduct.price} placeholder="Price" type="number" onChange={(e) => setNewProduct({...newProduct, price: e.target.value})} />
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                <div style={{ flex: 1 }}><label style={labelStyle}>CGST %</label><input style={{...inputStyle, marginBottom: 0}} type="number" placeholder="9" onChange={(e) => setNewProduct({...newProduct, cgstRate: e.target.value})} /></div>
+                <div style={{ flex: 1 }}><label style={labelStyle}>SGST %</label><input style={{...inputStyle, marginBottom: 0}} type="number" placeholder="9" onChange={(e) => setNewProduct({...newProduct, sgstRate: e.target.value})} /></div>
+              </div>
               <input type="file" accept="image/*" onChange={(e) => handleImage(e, 'product')} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}><input type="checkbox" checked={newProduct.trackInventory} onChange={(e) => setNewProduct({...newProduct, trackInventory: e.target.checked})} /><label>Track Stock?</label></div>
-              {newProduct.trackInventory && <input style={inputStyle} placeholder="Quantity" type="number" onChange={(e) => setNewProduct({...newProduct, quantity: e.target.value})} />}
-              <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}><button style={primaryBtn} onClick={handleSaveProduct}>Finalize</button><button style={cancelBtn} onClick={() => setIsProdModalOpen(false)}>Discard</button></div>
-            </motion.div>
-          </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '15px 0' }}>
+                <input type="checkbox" checked={newProduct.trackInventory} onChange={(e) => setNewProduct({...newProduct, trackInventory: e.target.checked})} />
+                <label style={{fontWeight: '600'}}>Track Stock?</label>
+              </div>
+              {newProduct.trackInventory && (
+                <input style={inputStyle} value={newProduct.quantity} placeholder="Quantity" type="number" onChange={(e) => setNewProduct({...newProduct, quantity: e.target.value})} />
+              )}
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button style={primaryBtn} onClick={handleSaveProduct}>Save Asset</button>
+                <button style={cancelBtn} onClick={() => setIsProdModalOpen(false)}>Cancel</button>
+              </div>
+          </motion.div></div>
+        )}
+
+        {/* Category Modal */}
+        {isCatModalOpen && (
+          <div style={modalOverlay}><motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} style={modalContent}>
+              <h3>{parentForNewSub ? `Add to ${parentForNewSub.name}` : 'New Root Variable'}</h3>
+              <input style={inputStyle} value={newCatName} onChange={(e) => setNewCatName(e.target.value)} placeholder="Identity Name..." />
+              <input type="file" accept="image/*" onChange={(e) => handleImage(e)} />
+              <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+                <button style={primaryBtn} onClick={() => {
+                   const token = localStorage.getItem('token');
+                   axios.post('http://localhost:5000/api/inventory/categories/add', 
+                    { name: newCatName, parent: parentForNewSub?._id || null, image: imagePreview }, 
+                    { headers: { Authorization: `Bearer ${token}` } }
+                   ).then(() => { setIsCatModalOpen(false); setNewCatName(''); setImagePreview(''); fetchData(); });
+                }}>Confirm</button>
+                <button style={cancelBtn} onClick={() => setIsCatModalOpen(false)}>Discard</button>
+              </div>
+          </motion.div></div>
+        )}
+
+        {/* Image Update Modal */}
+        {isImageUpdateModalOpen && (
+          <div style={modalOverlay}><motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} style={modalContent}>
+              <h3>Update Visual: {categoryToUpdate?.name}</h3>
+              <input type="file" accept="image/*" onChange={(e) => handleImage(e)} style={{ marginBottom: '10px' }} />
+              {imagePreview && <img src={imagePreview} style={{ width: '100%', borderRadius: '15px', maxHeight: '150px', objectFit: 'cover' }} alt="prev" />}
+              <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+                <button style={primaryBtn} onClick={handleUpdateCategoryImage}>Finalize</button>
+                <button style={cancelBtn} onClick={() => { setIsImageUpdateModalOpen(false); setImagePreview(''); }}>Discard</button>
+              </div>
+          </motion.div></div>
         )}
       </AnimatePresence>
     </div>
   );
 }
 
-// 🎨 PREMIUM STYLES
+// 🎨 BRAND STYLES
+const labelStyle = { fontSize: '11px', color: '#888', marginBottom: '5px', display: 'block', fontWeight: '600' };
+const searchContainer = { backgroundColor: '#F5F5F5', borderRadius: '12px', padding: '0 15px', border: '1px solid #EEE' };
+const searchInputStyle = { border: 'none', background: 'transparent', padding: '12px 0', outline: 'none', width: '200px', fontSize: '14px' };
+const noImgBox = { width: '40px', height: '40px', borderRadius: '10px', background: '#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center', fontSize: '10px', color: '#999' };
 const thumbnailStyle = { width: '40px', height: '40px', borderRadius: '10px', objectFit: 'cover' };
 const nodeTrigger = { cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', flex: 1 };
 const inventoryContainer = { padding: '60px', backgroundColor: '#FBFBFA', minHeight: '100vh', fontFamily: "'Outfit', sans-serif" };
 const headerStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '50px' };
-const titleStyle = { fontSize: '34px', fontWeight: '800', letterSpacing: '-1.5px' };
+const titleStyle = { fontSize: '34px', fontWeight: '800' };
 const tabSwitcher = { display: 'flex', gap: '8px', backgroundColor: '#F0EFEA', padding: '6px', borderRadius: '20px' };
 const tabBtn = { padding: '12px 28px', border: 'none', borderRadius: '15px', cursor: 'pointer', fontWeight: '600', backgroundColor: 'transparent' };
 const activeTabBtn = { ...tabBtn, backgroundColor: '#FFFFFF', boxShadow: '0 4px 15px rgba(0,0,0,0.06)' };
@@ -214,7 +241,7 @@ const whiteCard = { backgroundColor: '#FFFFFF', padding: '50px', borderRadius: '
 const actionRow = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '35px' };
 const categoryItemStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 25px', borderRadius: '20px' };
 const catActions = { display: 'flex', gap: '12px' };
-const subBtn = { padding: '8px 16px', borderRadius: '12px', border: '1px solid #121212', cursor: 'pointer', fontWeight: '700', fontSize: '11px', textTransform: 'uppercase' };
+const subBtn = { padding: '8px 16px', borderRadius: '12px', border: '1px solid #121212', cursor: 'pointer', fontWeight: '700', fontSize: '11px' };
 const delBtn = { ...subBtn, border: '1px solid #FF4D4D', color: '#FF4D4D' };
 const primaryBtn = { padding: '15px 32px', borderRadius: '18px', border: 'none', backgroundColor: '#121212', color: '#FFFFFF', fontWeight: '700', cursor: 'pointer' };
 const cancelBtn = { ...primaryBtn, backgroundColor: '#F5F5F5', color: '#555' };

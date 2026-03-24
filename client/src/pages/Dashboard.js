@@ -5,7 +5,6 @@ function Dashboard() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
   
-  // State for Staff Access Form
   const [staffData, setStaffData] = useState({ email: '', mobile: '', role: 'Manager' });
 
   const userData = JSON.parse(localStorage.getItem('user_data')) || {};
@@ -14,7 +13,7 @@ function Dashboard() {
 
   return (
     <div style={dashboardContainer}>
-      {/* --- PREMIMUM NAV WITH DROPDOWN --- */}
+      {/* --- NAV WITH DROPDOWN --- */}
       <nav style={navStyle}>
         <h1 style={logoStyle}>BillBuddy</h1>
         <div style={menuWrapper}>
@@ -25,7 +24,6 @@ function Dashboard() {
             <span style={userNameStyle}>Hello, {userName} 👋</span>
           </div>
 
-          {/* 💥 SEXY DROPDOWN MENU */}
           <div style={{
             ...dropdownStyle,
             opacity: isMenuOpen ? 1 : 0,
@@ -33,6 +31,8 @@ function Dashboard() {
             pointerEvents: isMenuOpen ? 'all' : 'none',
             transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' 
           }}>
+            {/* 🆕 DROPDOWN MEIN BILLING ADD KIYA */}
+            <div style={dropdownItem} onClick={() => navigate('/create-bill')}>💸 Create Bill</div>
             <div style={dropdownItem} onClick={() => navigate('/inventory')}>📦 Inventory</div>
             <div style={dropdownItem} onClick={() => navigate('/settings')}>⚙️ Settings</div>
             <div style={divider} />
@@ -48,8 +48,27 @@ function Dashboard() {
           <p style={{ color: '#888' }}>{userData.email}</p>
         </div>
 
-        {/* --- REAL STAFF ACCESS SECTION (Wahi Purana Wala) --- */}
-        <div style={whiteCard}>
+        {/* 🆕 QUICK ACTIONS SECTION (Bade Buttons) */}
+        <div style={actionGrid}>
+          <div style={actionCard} onClick={() => navigate('/create-bill')}>
+            <div style={iconCircle}>💸</div>
+            <div style={cardTextGroup}>
+              <h4 style={cardTitle}>Create New Bill</h4>
+              <p style={cardSub}>Quick GST Invoice generation</p>
+            </div>
+          </div>
+
+          <div style={{...actionCard, backgroundColor: '#121212', color: '#fff'}} onClick={() => navigate('/inventory')}>
+            <div style={{...iconCircle, backgroundColor: '#333'}}>📦</div>
+            <div style={cardTextGroup}>
+              <h4 style={{...cardTitle, color: '#fff'}}>Inventory</h4>
+              <p style={{color: '#aaa', fontSize: '13px'}}>Stock & Blueprints</p>
+            </div>
+          </div>
+        </div>
+
+        {/* --- STAFF ACCESS SECTION --- */}
+        <div style={{...whiteCard, marginTop: '40px'}}>
           <h3 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '10px' }}>Authorize Staff Access</h3>
           <p style={{ color: '#888', marginBottom: '30px' }}>Staff can only signup after you whitelist them here.</p>
 
@@ -82,7 +101,15 @@ function Dashboard() {
   );
 }
 
-// --- PREMIUM UI STYLES (Matches image_e7787b.png exactly) ---
+// --- NEW STYLES FOR BILLING SECTION ---
+const actionGrid = { display: 'flex', gap: '20px', marginBottom: '20px' };
+const actionCard = { flex: 1, display: 'flex', alignItems: 'center', gap: '20px', padding: '30px', backgroundColor: '#fff', borderRadius: '30px', boxShadow: '0 10px 30px rgba(0,0,0,0.02)', cursor: 'pointer', transition: '0.3s' };
+const iconCircle = { width: '60px', height: '60px', backgroundColor: '#F9F7F2', borderRadius: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '24px' };
+const cardTextGroup = { display: 'flex', flexDirection: 'column' };
+const cardTitle = { fontSize: '20px', fontWeight: '800', margin: 0 };
+const cardSub = { fontSize: '13px', color: '#888', margin: 0 };
+
+// --- PREMIMUM UI STYLES (Existing) ---
 const dashboardContainer = { minHeight: '100vh', backgroundColor: '#F9F7F2', fontFamily: "'Outfit', sans-serif" };
 const navStyle = { display: 'flex', justifyContent: 'space-between', padding: '20px 60px', backgroundColor: '#fff', borderBottom: '1px solid #f0f0f0' };
 const logoStyle = { fontSize: '24px', fontWeight: '900' };

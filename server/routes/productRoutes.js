@@ -3,7 +3,7 @@ const router = express.Router();
 const Product = require('../models/Product');
 const { protect } = require('../middleware/auth');
 
-// 1. Fetch all products
+// Fetch all products [cite: 312]
 router.get('/', protect, async (req, res) => {
   try {
     const products = await Product.find({ owner: req.user.userId || req.user.id }).populate('categoryId');
@@ -13,13 +13,17 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
-// 2. Register asset with visual data
+// Register asset with image 
 router.post('/add', protect, async (req, res) => {
   try {
     const { name, price, categoryId, trackInventory, quantity, image } = req.body;
     const newProduct = new Product({
-      name, price, categoryId, trackInventory, quantity,
-      image: image || "", // 🆕 Image field mapping
+      name, 
+      price, 
+      categoryId, 
+      trackInventory, 
+      quantity,
+      image: image || "", // 🆕 Image field explicitly mapped 
       owner: req.user.userId || req.user.id
     });
     await newProduct.save();

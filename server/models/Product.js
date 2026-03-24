@@ -1,3 +1,4 @@
+// server/models/Product.js
 const mongoose = require('mongoose');
 
 const ProductSchema = new mongoose.Schema({
@@ -6,8 +7,10 @@ const ProductSchema = new mongoose.Schema({
   categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
   trackInventory: { type: Boolean, default: false },
   quantity: { type: Number, default: 0 },
+  // 🆕 Naye fields for Global Tax 
+  cgstRate: { type: Number, default: 0 },
+  sgstRate: { type: Number, default: 0 },
   owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  // 🆕 Mandatory for visual identity
   image: { type: String, default: "" } 
 }, { timestamps: true });
 
