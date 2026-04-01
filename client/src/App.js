@@ -5,7 +5,8 @@ import AuthPage from './pages/AuthPage';
 import Dashboard from './pages/Dashboard';
 import SetupProfile from './pages/SetupProfile';
 import Inventory from './pages/Inventory'; 
-import CreateBill from './pages/CreateBill'; // 🆕 Billing page import kiya
+import CreateBill from './pages/CreateBill';
+import ViewBill from './pages/ViewBill'; // 🆕 Import kiya
 
 function App() {
   return (
@@ -16,12 +17,11 @@ function App() {
         <Route path="/setup-business" element={<SetupProfile />} /> 
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/inventory" element={<Inventory />} /> 
-        
-        {/* 🆕 Billing Terminal Route register kiya */}
         <Route path="/create-bill" element={<CreateBill />} /> 
+        {/* 🆕 Customer View Route */}
+        <Route path="/view-bill/:invoiceNumber" element={<ViewBill />} /> 
       </Routes>
     </Router>
   );
 }
-
 export default App;

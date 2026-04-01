@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// 🌳 Recursive Blueprint Node
+// 🌳 Recursive Blueprint Node for Categories
 const CategoryNode = ({ category, allCategories, onAddSub, onDelete, onSelect, activeId, onUpdateImage }) => {
   const [isOpen, setIsOpen] = useState(false);
   const children = allCategories.filter(cat => cat.parent === category._id);
+  
   return (
     <div style={{ marginLeft: '25px', marginBottom: '10px' }}>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{...categoryItemStyle, border: activeId === category._id ? '2px solid #121212' : '1px solid #EEE'}}>
@@ -38,7 +39,6 @@ function Inventory() {
   const [searchTerm, setSearchTerm] = useState(''); 
   const [selectedCat, setSelectedCat] = useState(null);
   
-  // All States
   const [isCatModalOpen, setIsCatModalOpen] = useState(false);
   const [isProdModalOpen, setIsProdModalOpen] = useState(false);
   const [isImageUpdateModalOpen, setIsImageUpdateModalOpen] = useState(false);
@@ -58,9 +58,10 @@ function Inventory() {
       const headers = { Authorization: `Bearer ${token}` };
       const [catRes, prodRes] = await Promise.all([
         axios.get('http://localhost:5000/api/inventory/categories', { headers }),
-        axios.get('http://localhost:5000/api/inventory/products', { headers })
+        axios.get('http://localhost:5000/api/inventory/products/', { headers })
       ]);
-      setCategories(catRes.data); setProducts(prodRes.data);
+      setCategories(catRes.data); 
+      setProducts(prodRes.data);
     } catch (err) { console.error("Sync Error"); }
   };
 
@@ -74,13 +75,30 @@ function Inventory() {
     if (file) reader.readAsDataURL(file);
   };
 
+  // 🆕 THE FIX: Save Product with GST Rates as Numbers 
   const handleSaveProduct = async () => {
     if (!newProduct.categoryId) return alert("Category select karo!");
-    const token = localStorage.getItem('token');
-    await axios.post('http://localhost:5000/api/inventory/products/add', newProduct, { headers: { Authorization: `Bearer ${token}` } });
-    setIsProdModalOpen(false); 
-    setNewProduct({ name: '', price: '', categoryId: '', trackInventory: false, quantity: 0, image: '', cgstRate: 0, sgstRate: 0 }); 
-    fetchData();
+    try {
+      const token = localStorage.getItem('token');
+      const finalProduct = {
+        ...newProduct,
+        price: Number(newProduct.price) || 0,
+        cgstRate: Number(newProduct.cgstRate) || 0,
+        sgstRate: Number(newProduct.sgstRate) || 0,
+        quantity: Number(newProduct.quantity) || 0
+      };
+
+      await axios.post('http://localhost:5000/api/inventory/products/add', finalProduct, { 
+        headers: { Authorization: `Bearer ${token}` } 
+      });
+      
+      setIsProdModalOpen(false);
+      setNewProduct({ name: '', price: '', categoryId: '', trackInventory: false, quantity: 0, image: '', cgstRate: 0, sgstRate: 0 }); 
+      fetchData();
+      alert("Asset Added Successfully! 🏎️");
+    } catch (err) {
+      alert("Registration Error: " + err.message);
+    }
   };
 
   const handleUpdateCategoryImage = async () => {
@@ -158,7 +176,6 @@ function Inventory() {
       )}
 
       <AnimatePresence>
-        {/* New Asset Modal */}
         {isProdModalOpen && (
           <div style={modalOverlay}><motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} style={modalContent}>
               <h3>New Asset Registration</h3>
@@ -169,10 +186,18 @@ function Inventory() {
               </select>
               <input style={inputStyle} value={newProduct.name} placeholder="Asset Name" onChange={(e) => setNewProduct({...newProduct, name: e.target.value})} />
               <input style={inputStyle} value={newProduct.price} placeholder="Price" type="number" onChange={(e) => setNewProduct({...newProduct, price: e.target.value})} />
+              
               <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-                <div style={{ flex: 1 }}><label style={labelStyle}>CGST %</label><input style={{...inputStyle, marginBottom: 0}} type="number" placeholder="9" onChange={(e) => setNewProduct({...newProduct, cgstRate: e.target.value})} /></div>
-                <div style={{ flex: 1 }}><label style={labelStyle}>SGST %</label><input style={{...inputStyle, marginBottom: 0}} type="number" placeholder="9" onChange={(e) => setNewProduct({...newProduct, sgstRate: e.target.value})} /></div>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>CGST %</label>
+                  <input style={{...inputStyle, marginBottom: 0}} type="number" placeholder="9" value={newProduct.cgstRate} onChange={(e) => setNewProduct({...newProduct, cgstRate: e.target.value})} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>SGST %</label>
+                  <input style={{...inputStyle, marginBottom: 0}} type="number" placeholder="9" value={newProduct.sgstRate} onChange={(e) => setNewProduct({...newProduct, sgstRate: e.target.value})} />
+                </div>
               </div>
+
               <input type="file" accept="image/*" onChange={(e) => handleImage(e, 'product')} />
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '15px 0' }}>
                 <input type="checkbox" checked={newProduct.trackInventory} onChange={(e) => setNewProduct({...newProduct, trackInventory: e.target.checked})} />
@@ -188,7 +213,6 @@ function Inventory() {
           </motion.div></div>
         )}
 
-        {/* Category Modal */}
         {isCatModalOpen && (
           <div style={modalOverlay}><motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} style={modalContent}>
               <h3>{parentForNewSub ? `Add to ${parentForNewSub.name}` : 'New Root Variable'}</h3>
@@ -207,7 +231,6 @@ function Inventory() {
           </motion.div></div>
         )}
 
-        {/* Image Update Modal */}
         {isImageUpdateModalOpen && (
           <div style={modalOverlay}><motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} style={modalContent}>
               <h3>Update Visual: {categoryToUpdate?.name}</h3>
@@ -224,7 +247,7 @@ function Inventory() {
   );
 }
 
-// 🎨 BRAND STYLES
+// 🎨 BRAND STYLES [cite: 177-199]
 const labelStyle = { fontSize: '11px', color: '#888', marginBottom: '5px', display: 'block', fontWeight: '600' };
 const searchContainer = { backgroundColor: '#F5F5F5', borderRadius: '12px', padding: '0 15px', border: '1px solid #EEE' };
 const searchInputStyle = { border: 'none', background: 'transparent', padding: '12px 0', outline: 'none', width: '200px', fontSize: '14px' };
