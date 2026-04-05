@@ -3,10 +3,8 @@ const router = express.Router();
 const Product = require('../models/Product');
 const { protect } = require('../middleware/auth');
 
-// 1. FETCH ALL ASSETS (Inventory List ke liye) [cite: 374]
 router.get('/', protect, async (req, res) => {
   try {
-    // Owner ke basis par products filter karna aur category detail nikalna
     const products = await Product.find({ owner: req.user.userId || req.user.id })
                                   .populate('categoryId');
     res.json(products);
@@ -15,12 +13,10 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
-// 2. REGISTER NEW ASSET (Naya Product add karne ke liye) [cite: 375-376]
 router.post('/add', protect, async (req, res) => {
   try {
     const { name, price, categoryId, trackInventory, quantity, image, cgstRate, sgstRate } = req.body;
     
-    // Naya Product Object banana saare tax fields ke saath [cite: 339, 375]
     const newProduct = new Product({
       name, 
       price, 
@@ -28,15 +24,37 @@ router.post('/add', protect, async (req, res) => {
       trackInventory, 
       quantity,
       image: image || "", 
-      cgstRate: cgstRate || 0, // 🆕 CGST field mapping
-      sgstRate: sgstRate || 0, // 🆕 SGST field mapping
-      owner: req.user.userId || req.user.id // Token se owner ID lena [cite: 330-332]
+      cgstRate: cgstRate || 0,
+      sgstRate: sgstRate || 0,
+      owner: req.user.userId || req.user.id
     });
  
     await newProduct.save();
     res.status(201).json(newProduct);
   } catch (err) {
     res.status(500).json({ message: "Registration error: " + err.message });
+  }
+});
+
+router.patch('/update-stock/:id', protect, async (req, res) => {
+  try {
+    const { quantity } = req.body;
+    const productId = req.params.id;
+    const ownerId = req.user.userId || req.user.id;
+
+    const updatedProduct = await Product.findOneAndUpdate(
+      { _id: productId, owner: ownerId },
+      { quantity: Number(quantity) },
+      { new: true }
+    );
+
+    if (!updatedProduct) {
+      return res.status(404).json({ message: "Product nahi mila" });
+    }
+
+    res.json(updatedProduct);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 
