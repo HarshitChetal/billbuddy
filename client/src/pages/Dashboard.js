@@ -6,30 +6,23 @@ function Dashboard() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
   
-  // 🆕 Staff state for API
   const [staffData, setStaffData] = useState({ email: '', mobile: '', role: 'Manager' });
 
   const userData = JSON.parse(localStorage.getItem('user_data')) || {};
-  const userName = userData.username || userData.email?.split('@')[0] || "Owner";
+  const userName = userData.username || userData.email?.split('@')[0] || "User";
   const displayPic = userData.profilePic;
+  const userRole = userData.subRole; 
 
-  // 🆕 FIXED GRANT ACCESS FUNCTION
   const handleGrantAccess = async () => {
     if (!staffData.email || !staffData.mobile) return alert("Bhai, Email aur Mobile dono bharna zaroori hai!");
-
     try {
       const token = localStorage.getItem('token');
       const res = await axios.post('http://localhost:5000/api/whitelist/grant', 
-        { 
-          email: staffData.email, 
-          phone: staffData.mobile, // Backend expects 'phone'
-          role: staffData.role 
-        },
+        { email: staffData.email, phone: staffData.mobile, role: staffData.role },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
       if (res.data.success) {
-        alert("Access Granted! Staff ab signup kar sakta hai. 🚀");
+        alert("Access Granted! 🚀");
         setStaffData({ email: '', mobile: '', role: 'Manager' });
       }
     } catch (err) {
@@ -39,7 +32,6 @@ function Dashboard() {
 
   return (
     <div style={dashboardContainer}>
-      {/* --- NAV WITH DROPDOWN --- */}
       <nav style={navStyle}>
         <h1 style={logoStyle}>BillBuddy</h1>
         <div style={menuWrapper}>
@@ -66,14 +58,13 @@ function Dashboard() {
         </div>
       </nav>
 
-      {/* --- MAIN CONTENT --- */}
       <div style={contentStyle}>
         <div style={welcomeHero}>
-          <h2 style={heroTitle}>Welcome, {userData.subRole || 'Owner'}</h2>
+          <h2 style={heroTitle}>Welcome, {userRole}</h2>
           <p style={{ color: '#888' }}>{userData.email}</p>
         </div>
 
-        {/* QUICK ACTIONS SECTION */}
+        {/* Manager aur Owner dono ko ye cards dikhenge */}
         <div style={actionGrid}>
           <div style={actionCard} onClick={() => navigate('/create-bill')}>
             <div style={iconCircle}>💸</div>
@@ -87,48 +78,34 @@ function Dashboard() {
             <div style={{...iconCircle, backgroundColor: '#333'}}>📦</div>
             <div style={cardTextGroup}>
               <h4 style={{...cardTitle, color: '#fff'}}>Inventory</h4>
-              <p style={{color: '#aaa', fontSize: '13px'}}>Stock & Blueprints</p>
+              <p style={{color: '#aaa', fontSize: '13px'}}>Full Stock Control</p>
             </div>
           </div>
         </div>
 
-        {/* --- STAFF ACCESS SECTION --- */}
-        <div style={{...whiteCard, marginTop: '40px'}}>
-          <h3 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '10px' }}>Authorize Staff Access</h3>
-          <p style={{ color: '#888', marginBottom: '30px' }}>Staff can only signup after you whitelist them here.</p>
+        {userRole === 'Owner' && (
+          <div style={{...whiteCard, marginTop: '40px'}}>
+            <h3 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '10px' }}>Authorize Staff Access</h3>
+            <p style={{ color: '#888', marginBottom: '30px' }}>Staff can only signup after you whitelist them here.</p>
 
-          <div style={formRow}>
-            <input 
-              style={inputField} 
-              placeholder="Staff Email" 
-              value={staffData.email}
-              onChange={(e) => setStaffData({...staffData, email: e.target.value})}
-            />
-            <input 
-              style={inputField} 
-              placeholder="Mobile Number" 
-              value={staffData.mobile}
-              onChange={(e) => setStaffData({...staffData, mobile: e.target.value})}
-            />
-            <select 
-              style={selectField}
-              value={staffData.role}
-              onChange={(e) => setStaffData({...staffData, role: e.target.value})}
-            >
-              <option>Manager</option>
-              <option>Employee</option>
-            </select>
-            <button style={grantBtn} onClick={handleGrantAccess}>Grant Access</button>
+            <div style={formRow}>
+              <input style={inputField} placeholder="Staff Email" value={staffData.email} onChange={(e) => setStaffData({...staffData, email: e.target.value})} />
+              <input style={inputField} placeholder="Mobile Number" value={staffData.mobile} onChange={(e) => setStaffData({...staffData, mobile: e.target.value})} />
+              <select style={selectField} value={staffData.role} onChange={(e) => setStaffData({...staffData, role: e.target.value})}>
+                <option>Manager</option>
+                <option>Employee</option>
+              </select>
+              <button style={grantBtn} onClick={handleGrantAccess}>Grant Access</button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
 }
 
-// --- STYLES (Keep exactly as you provided) ---
 const actionGrid = { display: 'flex', gap: '20px', marginBottom: '20px' };
-const actionCard = { flex: 1, display: 'flex', alignItems: 'center', gap: '20px', padding: '30px', backgroundColor: '#fff', borderRadius: '30px', boxShadow: '0 10px 30px rgba(0,0,0,0.02)', cursor: 'pointer', transition: '0.3s' };
+const actionCard = { flex: 1, display: 'flex', alignItems: 'center', gap: '20px', padding: '30px', backgroundColor: '#fff', borderRadius: '30px', boxShadow: '0 10px 30px rgba(0,0,0,0.02)', cursor: 'pointer' };
 const iconCircle = { width: '60px', height: '60px', backgroundColor: '#F9F7F2', borderRadius: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '24px' };
 const cardTextGroup = { display: 'flex', flexDirection: 'column' };
 const cardTitle = { fontSize: '20px', fontWeight: '800', margin: 0 };
