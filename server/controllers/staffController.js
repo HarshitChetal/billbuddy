@@ -26,24 +26,21 @@ exports.updateMyProfile = async (req, res) => {
   try {
     const userId = req.user.userId || req.user.id;
     const { fullName, phone, address, emergencyContact, bio } = req.body;
-
-    // Direct update with upsert [cite: 363]
     const profile = await StaffProfile.findOneAndUpdate(
-      { userId: userId }, 
-      { 
-        fullName, 
-        phone, 
-        address, 
-        emergencyContact, 
-        bio, 
-        updatedAt: Date.now() 
-      },
-      { new: true, upsert: true, runValidators: false } 
+      { userId: userId },
+      { fullName, phone, address, emergencyContact, bio, updatedAt: Date.now() },
+      { new: true, upsert: true, runValidators: false }
     );
-
     res.json({ success: true, profile });
   } catch (err) {
-    console.error("BACKEND_UPDATE_ERROR:", err);
-    res.status(500).json({ success: false, message: "Database Error: " + err.message });
+    res.status(500).json({ success: false, message: "Update fail: " + err.message });
   }
+};
+
+exports.getStaffList = async (req, res) => {
+  try {
+    const ownerId = req.user.userId || req.user.id;
+    const list = await Whitelist.find({ addedBy: ownerId });
+    res.json(list);
+  } catch (err) { res.status(500).json({ message: err.message }); }
 };
