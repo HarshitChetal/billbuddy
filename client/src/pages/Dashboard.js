@@ -1,15 +1,41 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 function Dashboard() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
   
+  // 🆕 Staff state for API
   const [staffData, setStaffData] = useState({ email: '', mobile: '', role: 'Manager' });
 
   const userData = JSON.parse(localStorage.getItem('user_data')) || {};
   const userName = userData.username || userData.email?.split('@')[0] || "Owner";
   const displayPic = userData.profilePic;
+
+  // 🆕 FIXED GRANT ACCESS FUNCTION
+  const handleGrantAccess = async () => {
+    if (!staffData.email || !staffData.mobile) return alert("Bhai, Email aur Mobile dono bharna zaroori hai!");
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post('http://localhost:5000/api/whitelist/grant', 
+        { 
+          email: staffData.email, 
+          phone: staffData.mobile, // Backend expects 'phone'
+          role: staffData.role 
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (res.data.success) {
+        alert("Access Granted! Staff ab signup kar sakta hai. 🚀");
+        setStaffData({ email: '', mobile: '', role: 'Manager' });
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || "Grant access fail ho gaya");
+    }
+  };
 
   return (
     <div style={dashboardContainer}>
@@ -31,7 +57,6 @@ function Dashboard() {
             pointerEvents: isMenuOpen ? 'all' : 'none',
             transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' 
           }}>
-            {/* 🆕 DROPDOWN MEIN BILLING ADD KIYA */}
             <div style={dropdownItem} onClick={() => navigate('/create-bill')}>💸 Create Bill</div>
             <div style={dropdownItem} onClick={() => navigate('/inventory')}>📦 Inventory</div>
             <div style={dropdownItem} onClick={() => navigate('/settings')}>⚙️ Settings</div>
@@ -48,7 +73,7 @@ function Dashboard() {
           <p style={{ color: '#888' }}>{userData.email}</p>
         </div>
 
-        {/* 🆕 QUICK ACTIONS SECTION (Bade Buttons) */}
+        {/* QUICK ACTIONS SECTION */}
         <div style={actionGrid}>
           <div style={actionCard} onClick={() => navigate('/create-bill')}>
             <div style={iconCircle}>💸</div>
@@ -93,7 +118,7 @@ function Dashboard() {
               <option>Manager</option>
               <option>Employee</option>
             </select>
-            <button style={grantBtn}>Grant Access</button>
+            <button style={grantBtn} onClick={handleGrantAccess}>Grant Access</button>
           </div>
         </div>
       </div>
@@ -101,15 +126,13 @@ function Dashboard() {
   );
 }
 
-// --- NEW STYLES FOR BILLING SECTION ---
+// --- STYLES (Keep exactly as you provided) ---
 const actionGrid = { display: 'flex', gap: '20px', marginBottom: '20px' };
 const actionCard = { flex: 1, display: 'flex', alignItems: 'center', gap: '20px', padding: '30px', backgroundColor: '#fff', borderRadius: '30px', boxShadow: '0 10px 30px rgba(0,0,0,0.02)', cursor: 'pointer', transition: '0.3s' };
 const iconCircle = { width: '60px', height: '60px', backgroundColor: '#F9F7F2', borderRadius: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '24px' };
 const cardTextGroup = { display: 'flex', flexDirection: 'column' };
 const cardTitle = { fontSize: '20px', fontWeight: '800', margin: 0 };
 const cardSub = { fontSize: '13px', color: '#888', margin: 0 };
-
-// --- PREMIMUM UI STYLES (Existing) ---
 const dashboardContainer = { minHeight: '100vh', backgroundColor: '#F9F7F2', fontFamily: "'Outfit', sans-serif" };
 const navStyle = { display: 'flex', justifyContent: 'space-between', padding: '20px 60px', backgroundColor: '#fff', borderBottom: '1px solid #f0f0f0' };
 const logoStyle = { fontSize: '24px', fontWeight: '900' };
