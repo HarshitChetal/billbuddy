@@ -6,10 +6,12 @@ const protect = (req, res, next) => {
     try {
       token = req.headers.authorization.split(' ')[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'bhai_secret');
-      req.user = decoded; // Isme ab ownerId aur subRole dono hain
+      
+      // req.user mein ab ownerId humesha link rahega
+      req.user = decoded; 
       next();
     } catch (error) {
-      res.status(401).json({ msg: "Token fail ho gaya" });
+      res.status(401).json({ msg: "Session expired, login again" });
     }
   }
   if (!token) res.status(401).json({ msg: "No token found" });

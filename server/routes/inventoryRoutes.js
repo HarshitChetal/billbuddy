@@ -4,12 +4,10 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 const { protect } = require('../middleware/auth');
 
-// 1. Get All Products (Owner + Manager both can see Owner's data)
+// 1. Get All Products (Owner ki linked inventory)
 router.get('/products', protect, async (req, res) => {
   try {
-    // 🆕 THE FIX: Use ownerId from token if available, else use userId
     const targetOwnerId = req.user.ownerId || req.user.userId; 
-    
     const products = await Product.find({ owner: targetOwnerId }).populate('categoryId');
     res.json(products);
   } catch (err) {
@@ -17,16 +15,14 @@ router.get('/products', protect, async (req, res) => {
   }
 });
 
-// 2. Get All Categories (Owner + Manager both can see Owner's blueprint)
+// 2. Get All Categories (Owner ka linked blueprint)
 router.get('/categories', protect, async (req, res) => {
   try {
-    // 🆕 THE FIX: Use ownerId from token if available, else use userId
     const targetOwnerId = req.user.ownerId || req.user.userId;
-
     const categories = await Category.find({ owner: targetOwnerId });
     res.json(categories);
   } catch (err) {
-    res.status(500).json({ message: "Categories load nahi hui: " + err.message });
+    res.status(500).json({ message: "Blueprint load nahi hua: " + err.message });
   }
 });
 
