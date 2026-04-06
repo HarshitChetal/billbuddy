@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { motion, AnimatePresence } from 'framer-motion';
 
 function Dashboard() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
-  
+
   // 🆕 Staff state for API
   const [staffData, setStaffData] = useState({ email: '', mobile: '', role: 'Manager' });
 
@@ -19,15 +20,15 @@ function Dashboard() {
 
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.post('http://localhost:5000/api/whitelist/grant', 
-        { 
-          email: staffData.email, 
+      const res = await axios.post('http://localhost:5000/api/whitelist/grant',
+        {
+          email: staffData.email,
           phone: staffData.mobile, // Backend expects 'phone'
-          role: staffData.role 
+          role: staffData.role
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       if (res.data.success) {
         alert("Access Granted! Staff ab signup kar sakta hai. 🚀");
         setStaffData({ email: '', mobile: '', role: 'Manager' });
@@ -37,96 +38,174 @@ function Dashboard() {
     }
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1, delayChildren: 0.1 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } }
+  };
+
   return (
     <div style={dashboardContainer}>
       {/* --- NAV WITH DROPDOWN --- */}
-      <nav style={navStyle}>
-        <h1 style={logoStyle}>BillBuddy</h1>
+      <motion.nav
+        style={navStyle}
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <motion.h1
+          style={logoStyle}
+          whileHover={{ scale: 1.02 }}
+          transition={{ type: 'spring', stiffness: 400 }}
+        >
+          BillBuddy
+        </motion.h1>
         <div style={menuWrapper}>
-          <div onClick={() => setIsMenuOpen(!isMenuOpen)} style={profileTrigger}>
+          <motion.div
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            style={profileTrigger}
+            whileHover={{ backgroundColor: '#F0F0F0' }}
+            whileTap={{ scale: 0.97 }}
+          >
             <div style={avatarStyle}>
               {displayPic ? <img src={displayPic} style={imgStyle} alt="profile" /> : userName[0].toUpperCase()}
             </div>
             <span style={userNameStyle}>Hello, {userName} 👋</span>
-          </div>
+          </motion.div>
 
-          <div style={{
-            ...dropdownStyle,
-            opacity: isMenuOpen ? 1 : 0,
-            transform: isMenuOpen ? 'translateY(0)' : 'translateY(-20px)',
-            pointerEvents: isMenuOpen ? 'all' : 'none',
-            transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' 
-          }}>
-            <div style={dropdownItem} onClick={() => navigate('/create-bill')}>💸 Create Bill</div>
-            <div style={dropdownItem} onClick={() => navigate('/inventory')}>📦 Inventory</div>
-            <div style={dropdownItem} onClick={() => navigate('/settings')}>⚙️ Settings</div>
-            <div style={divider} />
-            <div style={{ ...dropdownItem, color: '#ff4444' }} onClick={() => { localStorage.clear(); navigate('/'); }}>🚪 Logout</div>
-          </div>
+          <AnimatePresence>
+            {isMenuOpen && (
+              <motion.div
+                style={dropdownStyle}
+                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              >
+                {[
+                  { icon: '💸', label: 'Create Bill', path: '/create-bill' },
+                  { icon: '📦', label: 'Inventory', path: '/inventory' },
+                  { icon: '⚙️', label: 'Settings', path: '/settings' },
+                ].map((item, i) => (
+                  <motion.div
+                    key={item.label}
+                    style={dropdownItem}
+                    onClick={() => navigate(item.path)}
+                    whileHover={{ backgroundColor: '#F5F5F5', x: 3 }}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                  >
+                    {item.icon} {item.label}
+                  </motion.div>
+                ))}
+                <div style={divider} />
+                <motion.div
+                  style={{ ...dropdownItem, color: '#ff4444' }}
+                  onClick={() => { localStorage.clear(); navigate('/'); }}
+                  whileHover={{ backgroundColor: '#FFF5F5', x: 3 }}
+                >
+                  🚪 Logout
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-      </nav>
+      </motion.nav>
 
       {/* --- MAIN CONTENT --- */}
-      <div style={contentStyle}>
-        <div style={welcomeHero}>
+      <motion.div
+        style={contentStyle}
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div style={welcomeHero} variants={itemVariants}>
           <h2 style={heroTitle}>Welcome, {userData.subRole || 'Owner'}</h2>
           <p style={{ color: '#888' }}>{userData.email}</p>
-        </div>
+        </motion.div>
 
         {/* QUICK ACTIONS SECTION */}
-        <div style={actionGrid}>
-          <div style={actionCard} onClick={() => navigate('/create-bill')}>
+        <motion.div style={actionGrid} variants={itemVariants}>
+          <motion.div
+            style={actionCard}
+            onClick={() => navigate('/create-bill')}
+            whileHover={{ y: -5, boxShadow: '0 20px 50px rgba(0,0,0,0.07)' }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+          >
             <div style={iconCircle}>💸</div>
             <div style={cardTextGroup}>
               <h4 style={cardTitle}>Create New Bill</h4>
               <p style={cardSub}>Quick GST Invoice generation</p>
             </div>
-          </div>
+          </motion.div>
 
-          <div style={{...actionCard, backgroundColor: '#121212', color: '#fff'}} onClick={() => navigate('/inventory')}>
-            <div style={{...iconCircle, backgroundColor: '#333'}}>📦</div>
+          <motion.div
+            style={{ ...actionCard, backgroundColor: '#121212', color: '#fff' }}
+            onClick={() => navigate('/inventory')}
+            whileHover={{ y: -5, boxShadow: '0 20px 50px rgba(18,18,18,0.25)' }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+          >
+            <div style={{ ...iconCircle, backgroundColor: '#333' }}>📦</div>
             <div style={cardTextGroup}>
-              <h4 style={{...cardTitle, color: '#fff'}}>Inventory</h4>
-              <p style={{color: '#aaa', fontSize: '13px'}}>Stock & Blueprints</p>
+              <h4 style={{ ...cardTitle, color: '#fff' }}>Inventory</h4>
+              <p style={{ color: '#aaa', fontSize: '13px' }}>Stock & Blueprints</p>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
         {/* --- STAFF ACCESS SECTION --- */}
-        <div style={{...whiteCard, marginTop: '40px'}}>
+        <motion.div style={{ ...whiteCard, marginTop: '40px' }} variants={itemVariants}>
           <h3 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '10px' }}>Authorize Staff Access</h3>
           <p style={{ color: '#888', marginBottom: '30px' }}>Staff can only signup after you whitelist them here.</p>
 
           <div style={formRow}>
-            <input 
-              style={inputField} 
-              placeholder="Staff Email" 
+            <motion.input
+              style={inputField}
+              placeholder="Staff Email"
               value={staffData.email}
-              onChange={(e) => setStaffData({...staffData, email: e.target.value})}
+              onChange={(e) => setStaffData({ ...staffData, email: e.target.value })}
+              whileFocus={{ borderColor: '#121212', boxShadow: '0 0 0 3px rgba(18,18,18,0.07)' }}
             />
-            <input 
-              style={inputField} 
-              placeholder="Mobile Number" 
+            <motion.input
+              style={inputField}
+              placeholder="Mobile Number"
               value={staffData.mobile}
-              onChange={(e) => setStaffData({...staffData, mobile: e.target.value})}
+              onChange={(e) => setStaffData({ ...staffData, mobile: e.target.value })}
+              whileFocus={{ borderColor: '#121212', boxShadow: '0 0 0 3px rgba(18,18,18,0.07)' }}
             />
-            <select 
+            <select
               style={selectField}
               value={staffData.role}
-              onChange={(e) => setStaffData({...staffData, role: e.target.value})}
+              onChange={(e) => setStaffData({ ...staffData, role: e.target.value })}
             >
               <option>Manager</option>
               <option>Employee</option>
             </select>
-            <button style={grantBtn} onClick={handleGrantAccess}>Grant Access</button>
+            <motion.button
+              style={grantBtn}
+              onClick={handleGrantAccess}
+              whileHover={{ backgroundColor: '#333', y: -2, boxShadow: '0 8px 20px rgba(18,18,18,0.2)' }}
+              whileTap={{ scale: 0.97 }}
+            >
+              Grant Access
+            </motion.button>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }
 
-// --- STYLES (Keep exactly as you provided) ---
 const actionGrid = { display: 'flex', gap: '20px', marginBottom: '20px' };
 const actionCard = { flex: 1, display: 'flex', alignItems: 'center', gap: '20px', padding: '30px', backgroundColor: '#fff', borderRadius: '30px', boxShadow: '0 10px 30px rgba(0,0,0,0.02)', cursor: 'pointer', transition: '0.3s' };
 const iconCircle = { width: '60px', height: '60px', backgroundColor: '#F9F7F2', borderRadius: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '24px' };
