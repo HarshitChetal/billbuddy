@@ -4,25 +4,23 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 const { protect } = require('../middleware/auth');
 
-// 1. Get All Products (Owner ki linked inventory)
+// 1. Get All Products
 router.get('/products', protect, async (req, res) => {
   try {
-    const targetOwnerId = req.user.ownerId || req.user.userId; 
-    const products = await Product.find({ owner: targetOwnerId }).populate('categoryId');
+    const products = await Product.find({ owner: req.user.userId }).populate('categoryId');
     res.json(products);
   } catch (err) {
-    res.status(500).json({ message: "Products load nahi hue: " + err.message });
+    res.status(500).json({ message: err.message });
   }
 });
 
-// 2. Get All Categories (Owner ka linked blueprint)
+// 2. Get All Categories
 router.get('/categories', protect, async (req, res) => {
   try {
-    const targetOwnerId = req.user.ownerId || req.user.userId;
-    const categories = await Category.find({ owner: targetOwnerId });
+    const categories = await Category.find({ owner: req.user.userId });
     res.json(categories);
   } catch (err) {
-    res.status(500).json({ message: "Blueprint load nahi hua: " + err.message });
+    res.status(500).json({ message: err.message });
   }
 });
 

@@ -2,9 +2,9 @@ const mongoose = require('mongoose');
 
 const whitelistSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
-  phone: { type: String, required: true },
-  role: { type: String, enum: ['Manager', 'Employee'], default: 'Employee' },
-  addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  mobileNumber: { type: String, required: true },
+  role: { type: String, enum: ['Manager', 'Employee'], required: true },
+  ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
   createdAt: { type: Date, default: Date.now }
 });
 
